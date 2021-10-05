@@ -75,6 +75,8 @@ RealTimeChart pitchGraph;
 RealTimeChart rollGraph;
 RealTimeChart yawGraph;
 
+// 自己姿勢Chart
+BoxChart boxChart;
 
 // Chart Common Settings
 ChartSettings realTimeChartSettings;
@@ -108,12 +110,12 @@ float yaw;
 
 void settings() {    
     //画面描画モード 3D
-    // size(INIT_WINDOW_WIDTH,INIT_WINDOW_HEIGHT,P3D);
+    size(INIT_WINDOW_WIDTH,INIT_WINDOW_HEIGHT,P3D);
     /**
     * TODO
     * 3D Graphics driver ERROR
     */
-    size(INIT_WINDOW_WIDTH,INIT_WINDOW_HEIGHT);
+    // size(INIT_WINDOW_WIDTH,INIT_WINDOW_HEIGHT);
 }
 
 /**
@@ -131,10 +133,11 @@ void setup() {
     smooth();
 
     // GUI
-    GUISetup();
+    setupGUI();
     
     // Real Time Chart
-    RealTimeChartSetup();
+    setupRealTimeChart();
+    setupBoxChart();
 
     
     // roll_circle = new circleMonitor("roll",350,800,x_color);
@@ -145,7 +148,7 @@ void setup() {
 /**
 * controlP5 GUI 初期設定
  */
-void GUISetup(){
+void setupGUI(){
     int positionX = 20;
     int positionY = 20;
     int marginX = 200;
@@ -212,12 +215,12 @@ void GUISetup(){
 /**
 * Real Time Chart 初期設定
  */
-void RealTimeChartSetup(){
+void setupRealTimeChart(){
     // Chart Settings
     // realTimeChartSettings = new ChartSettings(400,150,60,50);
     realTimeChartSettings = new ChartSettings();
     realTimeChartSettings
-        .setWidth(400)
+        .setWidth(300)
         .setHeight(150)
         .setMarginX(60)
         .setMarginY(50);
@@ -288,7 +291,7 @@ void RealTimeChartSetup(){
         color(0,0,255)
         );
 
-    // 地磁気
+    // 自己姿勢
     pitchGraph = new RealTimeChart(
         "Pitch",
         initRealTimeChartX + 2*(realTimeChartSettings.getWidth() + realTimeChartSettings.getMarginX()),
@@ -320,6 +323,18 @@ void RealTimeChartSetup(){
         color(0,0,255)
         );
 }
+
+ void setupBoxChart(){
+    boxChart = new BoxChart();
+    boxChart
+        .setTitle("M5Stack")
+        .setX(1250)
+        .setY(350)
+        .setExtent(200)
+        .setWidth(54)
+        .setHeight(17)
+        .setDepth(54);
+}
 /**
 * 描画
 */
@@ -336,15 +351,12 @@ void draw(){
     yGyroGraph.draw();
     zGyroGraph.draw();
    
-    // 地磁気角度
+    // 自己位置姿勢
     pitchGraph.draw();
     rollGraph.draw();
     yawGraph.draw();
 
-    /*
-    ypr_box(roll,pitch,yaw);
-    ryp_box(roll,pitch,yaw);
-    */
+    boxChart.draw();
 }
 
 void clearChartAll(){
@@ -360,6 +372,8 @@ void clearChartAll(){
     pitchGraph.clear();
     rollGraph.clear();
     yawGraph.clear();
+
+    boxChart.clear();
 }
 
 void appendChartAll(){
@@ -374,6 +388,8 @@ void appendChartAll(){
         pitchGraph.append(dataTime,pitch);
         rollGraph.append(dataTime,roll);
         yawGraph.append(dataTime,yaw);
+
+        boxChart.setPosture(pitch,roll,yaw);
 }
 /**
 * KEY入力イベント
@@ -524,6 +540,9 @@ void serialEvent(Serial p){
     }
 }
 
+/**
+ * 文字列が数値であるか判定する
+ */
 public boolean isNumber(String num) {
     String regex = "[+-]?\\d*(\\.\\d+)?";
     return num.matches(regex);
@@ -633,6 +652,7 @@ public boolean isNumber(String num) {
 //         popMatrix();
 //     }
 // } /*
+
 // void roll_circle(float r){//roll circle
 // pushMatrix();
 // translate(circle_Xpotision,circle_Ypotision);
@@ -1130,5 +1150,200 @@ class ChartSettings{
     public ChartSettings setMarginY(int marginY){
         this.marginY = marginY;
         return this;
+    }
+}
+
+/**
+ */
+class BoxChart{
+    // Chart Title
+    private String title;
+    // Chart 位置
+    private int x = 0;
+    private int y = 0;
+    private int extent = 20;
+    // Box サイズ
+    private int width = 10;
+    private int height = 10;
+    private int depth = 10;
+    // Box 姿勢
+    private float pitch = 0.0;
+    private float roll = 0.0;
+    private float yaw =0.0;
+    // 座標軸
+    private int axisLength = 100;
+    // 座標軸幅
+    private int dataStrokeWeight = 1;
+    // Text Size
+    private int chartTitleTextSize = 15;
+     // Chart 描画色
+    private color regionFillColor = color(50);
+    private color regionLineColor = color(100);
+    private color titleTextColor = color(0,255,255);
+    private color boxFillColor = color(60,200,200);
+    private color boxLineColor = color(10,100,100);
+    private color pitchLineColor = color(255,0,0);
+    private color rollLineColor = color(0,0,255);
+    private color yawLineColor = color(0,255,0);
+
+    /**
+     * コンストラクタ
+     */
+    public BoxChart(String title, int x, int y, int extent, int width, int height, int depth){
+        this.title = title;
+        this.x = x;
+        this.y = y;
+        this.extent = extent;
+        this.width = width;
+        this.height = height;
+        this.depth = depth;
+        this.axisLength = (int)(extent*0.3);
+    }
+    public BoxChart(){
+
+    }
+
+    public String getTitle(){
+        return this.title;
+    }
+    public BoxChart setTitle(String title){
+        this.title = title;
+        return this;
+    }
+    public int getX(){
+        return this.x;
+    }
+    public BoxChart setX(int x){
+        this.x = x;
+        return this;
+    }
+    public int getY(){
+        return this.y;
+    }
+    public BoxChart setY(int y){
+        this.y = y;
+        return this;
+    }
+    public int getExtent(){
+        return this.extent;
+    }
+    public BoxChart setExtent(int extent){
+        this.extent = extent;
+        this.axisLength = (int)(extent*0.3);
+        return this;
+    }
+    public int getWidth(){
+        return this.width;
+    }
+    public BoxChart setWidth(int width){
+        this.width = width;
+        return this;
+    }
+    public int getHeight(){
+        return this.height;
+    }
+    public BoxChart setHeight(int height){
+        this.height = height;
+        return this;
+    }
+    public int getDepth(){
+        return this.depth;
+    }
+    public BoxChart setDepth(int depth){
+        this.depth = depth;
+        return this;
+    }
+    public int getAxisLength(){
+        return this.axisLength;
+    }
+    public BoxChart setAxisLength(int axisLength){
+        this.axisLength = axisLength;
+        return this;
+    }
+
+    // 姿勢を設定する
+    void setPosture(float pitch, float roll, float yaw){
+        this.pitch = pitch;
+        this.roll = -roll;
+        this.yaw = 180 -  yaw;
+    }
+
+    // 姿勢を初期化する
+    void clear(){
+        this.pitch = 0.0;
+        this.roll = 0.0;
+        this.yaw = 0.0;
+    }
+    
+    // BOXを描画する
+    void drawBox(float pitch, float roll, float yaw){
+        setPosture(pitch,roll,yaw);
+        draw();
+    }
+    // Boxを描画する
+    void draw() {
+        drawTitle();
+
+        pushMatrix();
+        
+        translate(x,y);
+
+        // 背景描画
+        stroke(regionLineColor);
+        // fill(regionFillColor);
+        noFill();
+        circle(0,0,extent);
+
+        // スケーリング
+        scale(1.5);
+
+        float c1 = cos(radians(roll));
+        float s1 = sin(radians(roll));
+        float c2 = cos(radians(pitch));
+        float s2 = sin(radians(pitch));
+        float c3 = cos(radians(yaw));
+        float s3 = sin(radians(yaw));
+        // 行列乗算・・・あってる？
+        // http://www.info.hiroshima-cu.ac.jp/~miyazaki/knowledge/tech0007.html
+        applyMatrix(c2*c3,   s1*s3+c1*c3*s2, c3*s1*s2-c1*s3, 0,
+                    -s2,     c1*c2,          c2*s1,          0,
+                    c2*s3,   c1*s2*s3-c3*s1, c1*c3+s1*s2*s3, 0,
+                    0,       0,              0,              1);
+
+        // BOX描画        
+        stroke(boxLineColor);
+        fill(boxFillColor);
+        box(width, height, depth);
+        
+        //X rotation(pitch)
+        stroke(pitchLineColor); 
+        strokeWeight(dataStrokeWeight); 
+        line(0, 0, 0, axisLength, 0, 0); 
+        //Y rotation(roll)
+        stroke(rollLineColor);
+        strokeWeight(dataStrokeWeight); 
+        line(0, 0, 0, 0, axisLength, 0);
+        //Z rotation(yaw)
+        stroke(yawLineColor);
+        strokeWeight(dataStrokeWeight); 
+        line(0, 0, 0, 0, 0, axisLength);
+
+        popMatrix();
+    }
+
+    /**
+     * Chartタイトルを描画する
+     */
+    void drawTitle(){
+        pushMatrix();
+
+        translate(x,y);
+        // Chartタイトル
+        textSize(chartTitleTextSize);
+        fill(titleTextColor);
+        textAlign(LEFT, BOTTOM);
+        text(title, -extent/2, -extent/2);
+
+        popMatrix();
     }
 }
